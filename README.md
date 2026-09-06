@@ -11,7 +11,7 @@ pnpm install
 pnpm dev
 ```
 
-The development server normally runs at `http://localhost:3000`. Use the exact address printed in your terminal. This project has not been published or pushed to GitHub.
+The development server normally runs at `http://localhost:3000`. Use the exact address printed in your terminal. The private source repository is `https://github.com/SyntaxWasError/catharsa`.
 
 ```sh
 pnpm typecheck
