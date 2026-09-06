@@ -1,0 +1,78 @@
+@import 'tailwindcss';
+@import 'tw-animate-css';
+@import 'shadcn/tailwind.css';
+@custom-variant dark (&:is(.dark *));
+@theme inline {
+  --font-sans: 'Plus Jakarta Sans', 'Inter', sans-serif;
+  --font-heading: var(--font-sans);
+  --color-cream: #f8f6f0;
+  --color-sage: #a3b18a;
+  --color-teal: #588157;
+  --color-ink: #2f3e46;
+  --color-emergency: #ef476f;
+  --color-background: #f8f6f0;
+  --color-foreground: #2f3e46;
+  --color-card: #ffffff;
+  --color-card-foreground: #2f3e46;
+  --color-popover: #ffffff;
+  --color-popover-foreground: #2f3e46;
+  --color-primary: #a3b18a;
+  --color-primary-foreground: #2f3e46;
+  --color-secondary: #f8f6f0;
+  --color-secondary-foreground: #2f3e46;
+  --color-muted: #eef0e7;
+  --color-muted-foreground: #5f6d68;
+  --color-accent: #eef0e7;
+  --color-accent-foreground: #2f3e46;
+  --color-border: #e2e8f0;
+  --color-input: #e2e8f0;
+  --color-ring: #588157;
+  --color-destructive: #ef476f;
+  --radius-lg: 1rem;
+  --radius-xl: 1.25rem;
+  --radius-2xl: 1.5rem;
+}
+@layer base {
+  * {
+    @apply border-border;
+  }
+  html {
+    @apply scroll-smooth scheme-light;
+  }
+  body {
+    @apply m-0 min-w-0 bg-cream font-sans text-ink antialiased;
+  }
+  button,
+  a,
+  input,
+  textarea,
+  select {
+    @apply transition-all duration-300 ease-in-out;
+  }
+  button:not(:disabled),
+  a {
+    @apply cursor-pointer;
+  }
+  button:focus-visible,
+  a:focus-visible,
+  input:focus-visible,
+  textarea:focus-visible,
+  select:focus-visible {
+    @apply outline-2 outline-offset-4 outline-teal;
+  }
+  button:disabled {
+    @apply cursor-not-allowed opacity-50;
+  }
+  ::selection {
+    @apply bg-sage/40 text-ink;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
