@@ -3,8 +3,9 @@
 @import 'shadcn/tailwind.css';
 @custom-variant dark (&:is(.dark *));
 @theme inline {
-  --font-sans: 'Plus Jakarta Sans', 'Inter', sans-serif;
+  --font-sans: var(--font-jakarta), 'Inter', sans-serif;
   --font-heading: var(--font-sans);
+  --font-editorial: var(--font-cormorant), Georgia, serif;
   --color-cream: #f8f6f0;
   --color-sage: #a3b18a;
   --color-teal: #588157;
