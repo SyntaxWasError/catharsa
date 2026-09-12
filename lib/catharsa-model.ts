@@ -1,17 +1,10 @@
-import { MOOD_SAMPLES, PSYCHOLOGISTS } from './catharsa-data';
+import { MOOD_SAMPLES } from './catharsa-data';
 export const STORAGE_KEY = 'catharsa.journal.v1';
 export type MoodRecord = {
   date: string;
   score: number;
   journal: string;
   demo?: boolean;
-};
-export type Insight = {
-  title: string;
-  body: string;
-  action: string;
-  topic: 'Kecemasan' | 'Keluarga' | 'Self-Love';
-  crisis: boolean;
 };
 export function dateKey(date = new Date()) {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
@@ -87,71 +80,10 @@ export function chartRecords(records: MoodRecord[], now = new Date()) {
     };
   });
 }
-export function filterDoctors(query: string, tag: string, sort: string) {
-  return PSYCHOLOGISTS.filter(
-    (d) =>
-      `${d.name} ${d.credential} ${d.specialties.join(' ')}`
-        .toLocaleLowerCase('id-ID')
-        .includes(query.trim().toLocaleLowerCase('id-ID')) &&
-      (tag === 'Semua' || d.specialties.some((s) => s === tag)),
-  )
-    .slice()
-    .sort((a, b) =>
-      sort === 'alphabetical'
-        ? a.name.localeCompare(b.name, 'id')
-        : sort === 'specialty'
-          ? a.specialties[0].localeCompare(b.specialties[0], 'id')
-          : Number(b.available) - Number(a.available) ||
-            a.name.localeCompare(b.name, 'id'),
-    );
-}
 export function isCrisis(text: string) {
   return /bunuh diri|menyakiti diri|ingin mati|akhiri hidup|suicide|kill myself/i.test(
     text,
   );
-}
-export function analyzeJournal(score: number, journal: string): Insight {
-  if (isCrisis(journal))
-    return {
-      title: 'Kamu layak mendapatkan dukungan sekarang.',
-      body: 'Terima kasih sudah menuliskan hal yang berat ini. Jika kamu merasa tidak aman atau mungkin menyakiti diri, dekati orang tepercaya dan hubungi bantuan langsung.',
-      action: 'Buka bantuan darurat untuk menghubungi 119 atau Healing119.',
-      topic: 'Kecemasan',
-      crisis: true,
-    };
-  if (
-    /cemas|takut|panik|khawatir|gelisah|stres|stress/i.test(journal) ||
-    score <= 2
-  )
-    return {
-      title: 'Sepertinya hari ini terasa cukup berat.',
-      body: 'Ada ruang untuk perasaan yang sulit. Coba berhenti sejenak, rasakan kaki menyentuh lantai, dan pilih satu kebutuhan kecil yang bisa kamu penuhi.',
-      action:
-        'Jika perasaan ini terus mengganggu keseharian, dukungan profesional bisa membantu.',
-      topic: 'Kecemasan',
-      crisis: false,
-    };
-  if (/keluarga|orang tua|anak|pasangan|ibu|ayah/i.test(journal))
-    return {
-      title: 'Hubungan juga membutuhkan ruang untuk bernapas.',
-      body: 'Ceritamu menyinggung orang-orang yang dekat denganmu. Coba tuliskan kebutuhan yang ingin kamu sampaikan dengan tenang, lalu pilih waktu yang terasa aman untuk berbicara.',
-      action: 'Kamu boleh menjaga kedekatan sekaligus merawat batasmu sendiri.',
-      topic: 'Keluarga',
-      crisis: false,
-    };
-  return {
-    title:
-      score >= 4
-        ? 'Ada hal baik yang layak kamu rayakan.'
-        : 'Terima kasih sudah hadir untuk dirimu.',
-    body:
-      score >= 4
-        ? 'Catat satu hal kecil yang membantu harimu terasa baik. Kamu bisa kembali ke catatan ini ketika membutuhkan pengingat.'
-        : 'Tidak semua perasaan harus langsung diberi jawaban. Mencatatnya adalah satu cara untuk mengenal kebutuhanmu, perlahan.',
-    action: 'Pilih satu tindakan baik untuk dirimu hari ini, sekecil apa pun.',
-    topic: 'Self-Love',
-    crisis: false,
-  };
 }
 export function chatReply(text: string) {
   if (isCrisis(text))
