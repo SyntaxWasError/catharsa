@@ -1,10 +1,10 @@
 import { Leaf } from 'lucide-react';
 export const moods = [
-  { emoji: '😭', label: 'Sangat buruk' },
-  { emoji: '😕', label: 'Buruk' },
-  { emoji: '😐', label: 'Netral' },
-  { emoji: '🙂', label: 'Baik' },
-  { emoji: '😄', label: 'Sangat baik' },
+  { label: 'Kewalahan', reference: 'Overwhelmed' },
+  { label: 'Murung', reference: 'Low' },
+  { label: 'Netral', reference: 'Neutral' },
+  { label: 'Baik', reference: 'Okay' },
+  { label: 'Ringan', reference: 'Light' },
 ];
 export const primary =
   'h-12 rounded-xl bg-sage px-6 text-sm font-semibold text-ink hover:bg-sage/80 active:scale-95';

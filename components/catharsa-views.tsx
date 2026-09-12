@@ -1,5 +1,5 @@
 'use client';
-import { useMemo, type SyntheticEvent } from 'react';
+import { lazy, Suspense, useMemo, type SyntheticEvent } from 'react';
 import {
   ArrowRight,
   Bell,
@@ -24,15 +24,6 @@ import {
   Wind,
   X,
 } from 'lucide-react';
-import {
-  AreaChart,
-  Area,
-  CartesianGrid,
-  XAxis,
-  YAxis,
-  Tooltip,
-  ResponsiveContainer,
-} from 'recharts';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
@@ -50,13 +41,16 @@ import {
   type Topic,
   type Article,
 } from '@/lib/catharsa-data';
-import {
-  chartRecords,
-  filterDoctors,
-  type MoodRecord,
-  type Insight,
-} from '@/lib/catharsa-model';
+import { type MoodRecord } from '@/lib/catharsa-model';
+import { filterDoctors } from '@/lib/psychologist-directory';
+import { type MentalAnalysis } from '@/lib/mental-analysis';
+import { MoodSprout } from '@/components/mood-sprout';
 import { moods, primary, secondary, PageHeader } from './catharsa-ui';
+
+const MoodChart = lazy(async () => {
+  const chartModule = await import('@/components/mood-chart');
+  return { default: chartModule.MoodChart };
+});
 
 export function PsychologistCard({
   doctor: d,
@@ -73,10 +67,10 @@ export function PsychologistCard({
     <article className="flex flex-col rounded-2xl border border-teal/15 bg-white p-6 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-md">
       <div className="mb-6 flex items-center justify-between gap-2">
         <span
-          className={`flex items-center gap-2 rounded-full px-2.5 py-1.5 text-[11px] font-medium ${d.available ? 'bg-sage/15 text-teal' : 'bg-slate-100 text-muted-foreground'}`}
+          className={`flex items-center gap-2 rounded-full px-2.5 py-1.5 text-[11px] font-medium ${d.available ? 'bg-sage/15 text-teal' : 'bg-cream text-muted-foreground'}`}
         >
           <span
-            className={`size-1.5 shrink-0 rounded-full ${d.available ? 'bg-teal shadow-[0_0_0_3px_#A3B18A30]' : 'bg-slate-400'}`}
+            className={`size-1.5 shrink-0 rounded-full ${d.available ? 'bg-teal shadow-[0_0_0_3px_#A3B18A30]' : 'bg-teal/35'}`}
           />
           {d.available ? 'Tersedia Hari Ini' : 'Sedang Menangani Klien'}
         </span>
@@ -237,10 +231,8 @@ export function ConsultView({
           </SelectContent>
         </Select>
       </div>
-      <div
-        aria-label="Filter spesialisasi"
-        className="my-6 flex flex-wrap gap-2"
-      >
+      <fieldset className="my-6 flex flex-wrap gap-2">
+        <legend className="sr-only">Filter spesialisasi</legend>
         {[
           'Semua',
           'Kecemasan',
@@ -259,7 +251,7 @@ export function ConsultView({
             {t}
           </button>
         ))}
-      </div>
+      </fieldset>
       <div className="mb-5 flex flex-wrap items-center justify-between gap-2">
         <p className="text-sm font-semibold">
           {doctors.length} psikolog untukmu
@@ -303,133 +295,6 @@ export function ConsultView({
   );
 }
 
-export function MoodChart({ records }: { records: MoodRecord[] }) {
-  const data = chartRecords(records);
-  const values = data.filter((d) => d.score !== null);
-  const average = values.length
-    ? values.reduce((sum, d) => sum + (d.score ?? 0), 0) / values.length
-    : 0;
-  return (
-    <section className="rounded-2xl border border-teal/15 bg-white p-5 shadow-sm sm:p-8">
-      <div className="flex flex-wrap items-start justify-between gap-5">
-        <div>
-          <p className="text-xs font-bold tracking-widest text-teal">
-            PERJALANAN PERASAANMU
-          </p>
-          <h2 className="mt-2 text-2xl font-bold tracking-tight">
-            Tujuh hari, banyak cerita.
-          </h2>
-          <p className="mt-2 text-sm text-muted-foreground">
-            Naik dan turun adalah bagian dari perjalanan.
-          </p>
-        </div>
-        <span className="rounded-xl bg-sage/15 px-4 py-3 text-sm">
-          <strong className="mr-1 text-xl">
-            {average ? average.toFixed(1) : '—'}
-          </strong>
-          / 5{' '}
-          <span className="ml-3 text-xs text-muted-foreground">rata-rata</span>
-        </span>
-      </div>
-      <figure
-        className="mt-8 h-[240px] min-w-0 w-full"
-        aria-label={`Grafik perasaan tujuh hari. ${data.map((d) => `${d.day}: ${d.score ?? 'belum tercatat'}${d.demo ? ' contoh' : ''}`).join(', ')}`}
-      >
-        <ResponsiveContainer width="100%" height="100%" minWidth={0}>
-          <AreaChart
-            data={data}
-            margin={{ top: 10, right: 10, bottom: 0, left: -28 }}
-          >
-            <defs>
-              <linearGradient id="sageMood" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#A3B18A" stopOpacity={0.5} />
-                <stop offset="100%" stopColor="#A3B18A" stopOpacity={0.02} />
-              </linearGradient>
-            </defs>
-            <CartesianGrid
-              strokeDasharray="4 5"
-              vertical={false}
-              stroke="#E2E8F0"
-            />
-            <XAxis
-              dataKey="day"
-              tickLine={false}
-              axisLine={false}
-              tick={{ fill: '#5F6D68', fontSize: 12 }}
-              dy={10}
-            />
-            <YAxis
-              domain={[1, 5]}
-              ticks={[1, 2, 3, 4, 5]}
-              tickLine={false}
-              axisLine={false}
-              tick={{ fill: '#5F6D68', fontSize: 12 }}
-            />
-            <Tooltip
-              content={({ active, payload }) =>
-                active && payload?.length ? (
-                  <div className="rounded-xl border border-teal/15 bg-white p-3 text-sm shadow-lg">
-                    <p className="mb-1 text-xs text-muted-foreground">
-                      {payload[0].payload.date}
-                      {payload[0].payload.demo ? ' · Contoh' : ''}
-                    </p>
-                    <span className="mr-2 text-xl">
-                      {moods[Number(payload[0].value) - 1]?.emoji}
-                    </span>
-                    {moods[Number(payload[0].value) - 1]?.label} ·{' '}
-                    {String(payload[0].value)}/5
-                  </div>
-                ) : null
-              }
-            />
-            <Area
-              dataKey="score"
-              type="monotone"
-              stroke="#588157"
-              strokeWidth={3}
-              fill="url(#sageMood)"
-              dot={{ fill: '#FFFFFF', stroke: '#588157', strokeWidth: 2, r: 4 }}
-              activeDot={{ r: 7, fill: '#A3B18A' }}
-              connectNulls={false}
-              isAnimationActive={false}
-            />
-          </AreaChart>
-        </ResponsiveContainer>
-      </figure>
-      <p className="mt-5 flex items-center gap-2 text-xs text-muted-foreground">
-        <span className="size-2 rounded-full bg-teal" />
-        Skor perasaan
-        {data.some((d) => d.demo) &&
-          ' · Termasuk data contoh, bukan penilaian tentang dirimu.'}
-      </p>
-      <details className="mt-4 text-xs text-muted-foreground">
-        <summary className="cursor-pointer hover:text-teal">
-          Lihat data sebagai tabel
-        </summary>
-        <table className="mt-3 w-full text-left">
-          <thead>
-            <tr>
-              <th className="py-2">Tanggal</th>
-              <th>Skor</th>
-              <th>Jenis</th>
-            </tr>
-          </thead>
-          <tbody>
-            {data.map((d) => (
-              <tr key={d.date} className="border-t">
-                <td className="py-2">{d.date}</td>
-                <td>{d.score ?? '—'}</td>
-                <td>
-                  {d.demo ? 'Contoh' : d.score ? 'Catatanmu' : 'Belum ada'}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </details>
-    </section>
-  );
-}
 export function TrackView({
   mood,
   setMood,
@@ -440,10 +305,12 @@ export function TrackView({
   ready,
   save,
   insight,
+  analysisError,
   storageError,
   draftDate,
   today,
-  navigate,
+  openLearning,
+  openConsult,
   emergency,
 }: {
   mood: number | null;
@@ -453,12 +320,14 @@ export function TrackView({
   records: MoodRecord[];
   saving: boolean;
   ready: boolean;
-  save: (e: SyntheticEvent<HTMLFormElement>) => void;
-  insight: Insight | null;
+  save: (e: SyntheticEvent<HTMLFormElement>) => void | Promise<void>;
+  insight: MentalAnalysis | null;
+  analysisError: string;
   storageError: string;
   draftDate: string;
   today: string;
-  navigate: (view: string, topic?: Topic) => void;
+  openLearning: (topic: Topic) => void;
+  openConsult: (specialty: string) => void;
   emergency: () => void;
 }) {
   const selected = moods[(mood ?? 3) - 1];
@@ -473,6 +342,7 @@ export function TrackView({
       <div className="grid items-start gap-6 lg:grid-cols-[1.6fr_1fr]">
         <form
           onSubmit={save}
+          aria-busy={saving}
           className="rounded-2xl border border-teal/15 bg-white p-5 shadow-sm sm:p-8"
         >
           <div className="flex flex-wrap items-center justify-between gap-2">
@@ -488,16 +358,48 @@ export function TrackView({
               })}
             </span>
           </div>
-          <div className="py-8 text-center">
-            <span aria-hidden="true" className="block text-6xl">
-              {selected.emoji}
-            </span>
+          <div className="pt-8 pb-5 text-center">
+            <MoodSprout
+              level={mood ?? 3}
+              label={
+                mood
+                  ? `Perasaan dipilih: ${selected.label}`
+                  : 'Belum memilih perasaan'
+              }
+              className="mx-auto size-24 drop-shadow-[0_10px_18px_rgba(88,129,87,0.12)]"
+            />
             <p aria-live="polite" className="mt-3 font-semibold">
               {mood ? selected.label : 'Apa yang kamu rasakan?'}
             </p>
           </div>
+          <fieldset className="mb-5 grid grid-cols-5 gap-1 sm:gap-2">
+            <legend className="sr-only">Pilih perasaan hari ini</legend>
+            {moods.map((item, index) => (
+              <button
+                key={item.reference}
+                type="button"
+                disabled={saving || !ready}
+                aria-label={`${index + 1} dari 5, ${item.label}, ${item.reference}`}
+                aria-pressed={mood === index + 1}
+                onClick={() => setMood(index + 1)}
+                className={`group rounded-xl border px-0.5 py-2 transition-all hover:-translate-y-1 hover:bg-sage/15 active:scale-95 sm:px-2 ${
+                  mood === index + 1
+                    ? 'border-teal bg-sage/20 shadow-sm'
+                    : 'border-transparent'
+                }`}
+              >
+                <MoodSprout
+                  level={index + 1}
+                  className="mx-auto size-11 sm:size-14"
+                />
+                <span className="mt-1 block truncate text-[9px] text-muted-foreground sm:text-[11px]">
+                  {item.label}
+                </span>
+              </button>
+            ))}
+          </fieldset>
           <span id="mood-slider-label" className="sr-only">
-            Perasaan, 1 sangat buruk sampai 5 sangat baik
+            Perasaan, 1 kewalahan sampai 5 ringan
           </span>
           <Slider
             aria-labelledby="mood-slider-label"
@@ -510,7 +412,7 @@ export function TrackView({
             className="mx-auto mb-3 w-[95%]! py-2 [&_[data-slot=slider-track]]:h-2 [&_[data-slot=slider-track]]:bg-gradient-to-r [&_[data-slot=slider-track]]:from-sage/15 [&_[data-slot=slider-track]]:to-sage/60 [&_[data-slot=slider-thumb]]:size-5 [&_[data-slot=slider-thumb]]:shadow-[0_0_16px_#A3B18A88]"
           />
           <div className="mb-7 flex justify-between text-xs text-muted-foreground">
-            <span>1 · Sangat buruk</span>
+            <span>1 · Kewalahan</span>
             <button
               type="button"
               disabled={saving || !ready}
@@ -519,7 +421,7 @@ export function TrackView({
             >
               3 · Netral
             </button>
-            <span>5 · Sangat baik</span>
+            <span>5 · Ringan</span>
           </div>
           <p className="mb-3 text-xs text-muted-foreground">
             {draftDate !== today
@@ -550,6 +452,17 @@ export function TrackView({
               {storageError}
             </p>
           )}
+          {analysisError && (
+            <p
+              role="alert"
+              className="mt-4 rounded-xl border border-emergency/25 bg-emergency/5 p-3 text-sm"
+            >
+              {storageError
+                ? 'Tulisanmu masih ada di halaman ini. Salin sebelum menutup halaman.'
+                : 'Catatanmu tetap tersimpan.'}{' '}
+              {analysisError}
+            </p>
+          )}
           <Button
             disabled={!ready || saving || mood === null}
             type="submit"
@@ -561,9 +474,12 @@ export function TrackView({
               <Sparkles size={17} />
             )}
             {saving
-              ? 'Menyimpan & menyiapkan refleksi...'
+              ? 'Mengirim & menganalisis dengan aman...'
               : 'Simpan & Analisis'}
           </Button>
+          <output className="sr-only" aria-live="polite">
+            {saving ? 'Analisis sedang diproses.' : ''}
+          </output>
           {mood === null && (
             <p className="mt-2 text-center text-xs text-muted-foreground">
               Pilih perasaanmu terlebih dahulu.
@@ -571,8 +487,9 @@ export function TrackView({
           )}
           <p className="mt-4 flex items-start justify-center gap-2 text-xs leading-5 text-muted-foreground">
             <LockKeyhole size={13} className="mt-0.5 shrink-0" />
-            Jurnal disimpan di browser ini, tanpa dikirim ke server. Pengguna
-            perangkat ini dapat mengaksesnya.
+            Saat dianalisis, skor dan teks dikirim sementara ke endpoint
+            Catharsa. Catatan tetap disimpan hanya di browser ini dan tidak
+            diteruskan ke penyedia AI pihak ketiga.
           </p>
         </form>
         <aside className="space-y-5">
@@ -608,14 +525,27 @@ export function TrackView({
               Sebuah refleksi, bukan diagnosis.
             </h3>
             <p className="mt-2 text-sm leading-6 text-muted-foreground">
-              Insight adalah simulasi berbasis kata kunci dan skor perasaan.
-              Hasilnya tidak mengukur tingkat kecemasan atau menggantikan
-              penilaian psikolog.
+              Mesin step-care Catharsa membaca pola bahasa dan skor perasaan
+              untuk memilih langkah dukungan. Hasilnya tidak mengukur kondisi
+              klinis atau menggantikan penilaian psikolog.
             </p>
           </div>
         </aside>
       </div>
-      <MoodChart records={records} />
+      <Suspense
+        fallback={
+          <section
+            aria-label="Memuat grafik perasaan"
+            className="h-[380px] animate-pulse rounded-2xl border border-teal/15 bg-white p-8"
+          >
+            <div className="h-4 w-44 rounded-full bg-sage/25" />
+            <div className="mt-5 h-7 w-64 max-w-full rounded-full bg-sage/15" />
+            <div className="mt-10 h-56 rounded-xl bg-cream" />
+          </section>
+        }
+      >
+        <MoodChart records={records} />
+      </Suspense>
       {insight && (
         <section
           aria-live="polite"
@@ -623,7 +553,7 @@ export function TrackView({
         >
           <div className="flex items-center gap-2 text-xs font-bold tracking-widest text-teal">
             <Sparkles size={17} />
-            REFLEKSI UNTUKMU · SIMULASI
+            ANALISIS STEP-CARE · TINGKAT {insight.careLevel}
           </div>
           <h2 className="mt-4 text-2xl font-bold tracking-tight">
             {insight.title}
@@ -634,6 +564,14 @@ export function TrackView({
           <p className="mt-3 text-sm leading-6 text-muted-foreground">
             {insight.action}
           </p>
+          <div className="mt-4 flex flex-wrap gap-2 text-xs">
+            <span className="rounded-full border border-teal/15 bg-white/70 px-3 py-1.5">
+              Fokus: {insight.topic}
+            </span>
+            <span className="rounded-full border border-teal/15 bg-white/70 px-3 py-1.5">
+              Rujukan: {insight.specialty}
+            </span>
+          </div>
           <div className="mt-6 flex flex-wrap gap-3">
             {insight.crisis && (
               <Button
@@ -643,18 +581,46 @@ export function TrackView({
                 Buka bantuan darurat
               </Button>
             )}
-            <Button
-              onClick={() => navigate('grow', insight.topic)}
-              className={secondary}
-            >
-              <BookOpen size={16} />
-              Baca Artikel Edukasi
-            </Button>
-            <Button onClick={() => navigate('consult')} className={primary}>
-              <MessageCircle size={16} />
-              Konsultasi Ahli
-            </Button>
+            {insight.careLevel <= 1 ? (
+              <>
+                <Button
+                  onClick={() => openLearning(insight.topic)}
+                  className={primary}
+                >
+                  <BookOpen size={16} />
+                  Baca Artikel Edukasi
+                </Button>
+                <Button
+                  onClick={() => openConsult(insight.specialty)}
+                  className={secondary}
+                >
+                  <MessageCircle size={16} />
+                  Lihat Psikolog
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button
+                  onClick={() => openConsult(insight.specialty)}
+                  className={primary}
+                >
+                  <MessageCircle size={16} />
+                  Temukan Psikolog {insight.specialty}
+                </Button>
+                <Button
+                  onClick={() => openLearning(insight.topic)}
+                  className={secondary}
+                >
+                  <BookOpen size={16} />
+                  Baca Pendamping
+                </Button>
+              </>
+            )}
           </div>
+          <p className="mt-5 text-xs text-muted-foreground">
+            Sumber analisis: {insight.provider}. Ini adalah panduan awal, bukan
+            diagnosis.
+          </p>
         </section>
       )}
     </div>
@@ -769,7 +735,8 @@ export function GrowView({
         />
       </div>
       <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
-        <div aria-label="Topik pembelajaran" className="flex flex-wrap gap-2">
+        <fieldset className="flex flex-wrap gap-2">
+          <legend className="sr-only">Topik pembelajaran</legend>
           {TOPICS.map((t) => (
             <button
               aria-pressed={topic === t}
@@ -780,7 +747,7 @@ export function GrowView({
               {t}
             </button>
           ))}
-        </div>
+        </fieldset>
         <span className="text-sm text-muted-foreground">
           {articles.length} ruang untuk belajar
         </span>
