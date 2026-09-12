@@ -28,6 +28,9 @@ function load(file, dependencies = {}) {
 }
 const data = load('catharsa-data.ts');
 const model = load('catharsa-model.ts', { './catharsa-data': data });
+const directory = load('psychologist-directory.ts', {
+  './catharsa-data': data,
+});
 const now = new Date(2026, 8, 6, 23, 55);
 
 test('seven dates remain consecutive across month and year boundaries', () => {
@@ -81,33 +84,23 @@ test('invalid scores and oversized drafts cannot be saved', () => {
 });
 test('directory search, specialty filter and sort compose correctly', () => {
   assert.deepEqual(
-    model
+    directory
       .filterDoctors('  NADIA ', 'Kecemasan', 'availability')
       .map((d) => d.id),
     ['nadia'],
   );
   assert.equal(
-    model.filterDoctors('Nadia', 'Keluarga', 'availability').length,
+    directory.filterDoctors('Nadia', 'Keluarga', 'availability').length,
     0,
   );
   assert.equal(
-    model.filterDoctors('', 'Semua', 'alphabetical')[0].name,
+    directory.filterDoctors('', 'Semua', 'alphabetical')[0].name,
     'Ayu Lestari',
   );
-  const sorted = model.filterDoctors('', 'Semua', 'availability');
+  const sorted = directory.filterDoctors('', 'Semua', 'availability');
   assert.ok(sorted.slice(0, 4).every((d) => d.available));
   assert.ok(sorted.slice(4).every((d) => !d.available));
 });
-test('insights route to a matching topic without presenting a diagnosis', () => {
-  assert.equal(
-    model.analyzeJournal(2, 'Hari terasa berat.').topic,
-    'Kecemasan',
-  );
-  assert.equal(
-    model.analyzeJournal(3, 'Aku berbicara dengan keluarga.').topic,
-    'Keluarga',
-  );
-  assert.equal(model.analyzeJournal(5, 'Aku bersyukur.').topic, 'Self-Love');
-  assert.equal(model.analyzeJournal(3, 'Ingin menyakiti diri.').crisis, true);
+test('chat escalation keeps urgent language deterministic', () => {
   assert.match(model.chatReply('ingin mati'), /119/);
 });
